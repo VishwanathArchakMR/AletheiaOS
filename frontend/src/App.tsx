@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { SystemStatus } from "./features/system-status/SystemStatus";
 import {
+  API_BASE_URL,
   knowledgeApi,
   type AnswerResponse,
   type EvidenceMatch,
@@ -50,6 +51,23 @@ export default function App() {
   const [toolResults, setToolResults] = useState<Array<Record<string, unknown>> | null>(null);
   const [toolError, setToolError] = useState("");
   const [runningTool, setRunningTool] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
+  const [demoMessage, setDemoMessage] = useState("");
+  const [demoError, setDemoError] = useState("");
+
+  async function loadDemo() {
+    setLoadingDemo(true);
+    setDemoMessage("");
+    setDemoError("");
+    try {
+      const result = await knowledgeApi.loadDemo();
+      setDemoMessage(`Loaded ${result.sources_loaded} demo sources. You can now ask questions.`);
+    } catch (error) {
+      setDemoError(messageFor(error));
+    } finally {
+      setLoadingDemo(false);
+    }
+  }
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,11 +154,13 @@ export default function App() {
     <div className="app-shell">
       <header className="masthead">
         <a className="brand" href="#home" aria-label="AletheiaOS home">
-          <span className="brand-mark" aria-hidden="true">A</span>
+          <span className="brand-mark" aria-hidden="true">
+            A
+          </span>
           <span>AletheiaOS</span>
         </a>
         <p className="product-subtitle">The Truth Layer for Organizational Intelligence</p>
-        <a className="docs-link" href="http://localhost:8000/docs" target="_blank" rel="noreferrer">
+        <a className="docs-link" href={`${API_BASE_URL}/docs`} target="_blank" rel="noreferrer">
           API docs <span aria-hidden="true">↗</span>
         </a>
       </header>
@@ -200,7 +220,9 @@ export default function App() {
               <span className="scope-note">Current source revisions only</span>
             </div>
             <form className="search-form" onSubmit={(event) => void search(event)}>
-              <label className="visually-hidden" htmlFor="evidence-query">Search terms</label>
+              <label className="visually-hidden" htmlFor="evidence-query">
+                Search terms
+              </label>
               <input
                 id="evidence-query"
                 maxLength={200}
@@ -213,14 +235,22 @@ export default function App() {
                 {searching ? "Searching..." : "Search evidence"}
               </button>
             </form>
-            {searchError && <p className="form-message error" role="alert">{searchError}</p>}
+            {searchError && (
+              <p className="form-message error" role="alert">
+                {searchError}
+              </p>
+            )}
             {matches.length > 0 ? (
               <div className="results" aria-live="polite">
                 <p className="result-count">{matches.length} evidence matches</p>
-                {matches.map((match) => <EvidenceItem key={match.chunk_id} match={match} />)}
+                {matches.map((match) => (
+                  <EvidenceItem key={match.chunk_id} match={match} />
+                ))}
               </div>
             ) : !searchError && !searching && query ? (
-              <p className="empty-state" role="status">No active evidence matched that search.</p>
+              <p className="empty-state" role="status">
+                No active evidence matched that search.
+              </p>
             ) : (
               <p className="empty-state">Search indexed passages from active source revisions.</p>
             )}
@@ -233,6 +263,26 @@ export default function App() {
                 <h2 id="ask-heading">Ask against the graph</h2>
               </div>
               <span className="scope-note">Unresolved claims stay unanswered</span>
+            </div>
+            <div className="demo-loader">
+              <button
+                className="secondary-button"
+                disabled={loadingDemo}
+                onClick={() => void loadDemo()}
+                type="button"
+              >
+                {loadingDemo ? "Loading demo graph..." : "Load synthetic company demo"}
+              </button>
+              {demoMessage && (
+                <p className="form-message success" role="status">
+                  {demoMessage}
+                </p>
+              )}
+              {demoError && (
+                <p className="form-message error" role="alert">
+                  {demoError}
+                </p>
+              )}
             </div>
             <form className="question-form" onSubmit={(event) => void ask(event)}>
               <label htmlFor="question">Question</label>
@@ -249,14 +299,21 @@ export default function App() {
                 {asking ? "Checking evidence..." : "Ask"}
               </button>
             </form>
-            {answerError && <p className="form-message error" role="alert">{answerError}</p>}
+            {answerError && (
+              <p className="form-message error" role="alert">
+                {answerError}
+              </p>
+            )}
             {answer && (
               <section className="answer-result" aria-live="polite">
-                <p className={`answer-status ${answer.status}`}>{answer.status.replaceAll("_", " ")}</p>
+                <p className={`answer-status ${answer.status}`}>
+                  {answer.status.replaceAll("_", " ")}
+                </p>
                 <p className="answer-text">{answer.answer}</p>
                 {answer.entities?.map((entity) => (
                   <p className="entity-candidate" key={String(entity.entity_id)}>
-                    {String(entity.entity_type)} · {String(entity.name)} · {String(entity.entity_id)}
+                    {String(entity.entity_type)} · {String(entity.name)} ·{" "}
+                    {String(entity.entity_id)}
                   </p>
                 ))}
                 <CitationList claims={answer.claims} />
@@ -282,7 +339,11 @@ export default function App() {
                     setToolResults(null);
                   }}
                 >
-                  {GRAPH_TOOLS.map((tool) => <option key={tool.name} value={tool.name}>{tool.label}</option>)}
+                  {GRAPH_TOOLS.map((tool) => (
+                    <option key={tool.name} value={tool.name}>
+                      {tool.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className="tool-parameters">
@@ -290,14 +351,20 @@ export default function App() {
                   <label key={field}>
                     {field.replaceAll("_", " ")}
                     <input
-                      onChange={(event) => setToolValues((values) => ({ ...values, [field]: event.target.value }))}
+                      onChange={(event) =>
+                        setToolValues((values) => ({ ...values, [field]: event.target.value }))
+                      }
                       required
                       value={toolValues[field] ?? ""}
                     />
                   </label>
                 ))}
               </div>
-              {toolError && <p className="form-message error" role="alert">{toolError}</p>}
+              {toolError && (
+                <p className="form-message error" role="alert">
+                  {toolError}
+                </p>
+              )}
               <button className="primary-button" disabled={runningTool} type="submit">
                 {runningTool ? "Querying..." : "Run operation"}
               </button>
@@ -334,7 +401,10 @@ export default function App() {
                 </label>
                 <label>
                   Source type
-                  <select value={sourceKind} onChange={(event) => setSourceKind(event.target.value as SourceKind)}>
+                  <select
+                    value={sourceKind}
+                    onChange={(event) => setSourceKind(event.target.value as SourceKind)}
+                  >
                     <option value="document">Document</option>
                     <option value="ticket">Ticket</option>
                     <option value="chat">Chat message</option>
@@ -344,7 +414,10 @@ export default function App() {
                 </label>
                 <label>
                   Format
-                  <select value={sourceFormat} onChange={(event) => setSourceFormat(event.target.value as SourceFormat)}>
+                  <select
+                    value={sourceFormat}
+                    onChange={(event) => setSourceFormat(event.target.value as SourceFormat)}
+                  >
                     <option value="md">Markdown</option>
                     <option value="txt">TXT</option>
                     <option value="json">JSON</option>
@@ -372,10 +445,15 @@ export default function App() {
                   value={content}
                 />
               </label>
-              {ingestError && <p className="form-message error" role="alert">{ingestError}</p>}
+              {ingestError && (
+                <p className="form-message error" role="alert">
+                  {ingestError}
+                </p>
+              )}
               {receipt && (
                 <p className="form-message success" role="status">
-                  Revision {receipt.revision_id.slice(0, 12)} is active; {receipt.chunks_processed} passages indexed.
+                  Revision {receipt.revision_id.slice(0, 12)} is active; {receipt.chunks_processed}{" "}
+                  passages indexed.
                 </p>
               )}
               <button className="primary-button" disabled={ingesting} type="submit">
@@ -397,35 +475,79 @@ function CitationList({ claims }: { claims: Array<Record<string, unknown>> }) {
   if (claims.length === 0) return null;
   const citations = claims.flatMap((claim) => {
     const prefixes = ["", "first_", "second_"];
-    return prefixes.flatMap((prefix) => {
-      const sourceId = claim[`${prefix}source_id`];
-      const chunkId = claim[`${prefix}chunk_id`];
-      if (typeof sourceId !== "string" || typeof chunkId !== "string") return [];
-      return [{
-        sourceId,
-        chunkId,
-        factId: claim[`${prefix}fact_id`],
-        revisionId: claim[`${prefix}revision_id`],
-        locator: claim[`${prefix}citation_locator`],
-        url: claim[`${prefix}canonical_url`],
-      }];
-    });
+    const nestedEvidence = Array.isArray(claim.evidence) ? claim.evidence.filter(isRecord) : [];
+    return [claim, ...nestedEvidence].flatMap((item) =>
+      prefixes.flatMap((prefix) => {
+        const sourceId = item[`${prefix}source_id`];
+        const chunkId = item[`${prefix}chunk_id`];
+        if (typeof sourceId !== "string" || typeof chunkId !== "string") return [];
+        return [
+          {
+            sourceId,
+            chunkId,
+            factId: item[`${prefix}fact_id`],
+            revisionId: item[`${prefix}revision_id`],
+            locator: item[`${prefix}citation_locator`],
+            quote: item[`${prefix}quote`],
+            url: item[`${prefix}canonical_url`],
+          },
+        ];
+      }),
+    );
   });
-  if (citations.length === 0) return <p className="empty-state">No citation records were returned.</p>;
+  const paths = claims.flatMap((claim) => {
+    if (!Array.isArray(claim.path_nodes) || !Array.isArray(claim.relationships)) return [];
+    const nodes = claim.path_nodes.filter(isRecord);
+    const names = nodes.map((node) =>
+      typeof node.name === "string" ? node.name : String(node.id ?? "entity"),
+    );
+    const relationships = claim.relationships.filter(
+      (relationship): relationship is string => typeof relationship === "string",
+    );
+    return names.length
+      ? [
+          `${names[0]} ${relationships
+            .map((type, index) => `—${type.replaceAll("_", " ")}→ ${names[index + 1] ?? "?"}`)
+            .join(" ")}`,
+        ]
+      : [];
+  });
+  if (citations.length === 0)
+    return <p className="empty-state">No citation records were returned.</p>;
   return (
     <div className="citation-list">
-      {citations.map((citation) => (
-        <article className="citation-item" key={citation.chunkId}>
+      {paths.map((path) => (
+        <p className="graph-path" key={path}>
+          {path}
+        </p>
+      ))}
+      {citations.map((citation, index) => (
+        <article
+          className="citation-item"
+          key={`${citation.sourceId}:${citation.chunkId}:${index}`}
+        >
           <strong>{typeof citation.factId === "string" ? citation.factId : "Evidence"}</strong>
           <span>{typeof citation.locator === "string" ? citation.locator : citation.chunkId}</span>
-          <span>Revision {typeof citation.revisionId === "string" ? citation.revisionId.slice(0, 12) : "unknown"}</span>
+          <span>
+            Revision{" "}
+            {typeof citation.revisionId === "string" ? citation.revisionId.slice(0, 12) : "unknown"}
+          </span>
           {typeof citation.url === "string" ? (
-            <a href={citation.url} target="_blank" rel="noreferrer">{citation.sourceId} ↗</a>
-          ) : <span>{citation.sourceId}</span>}
+            <a href={citation.url} target="_blank" rel="noreferrer">
+              {citation.sourceId} ↗
+            </a>
+          ) : (
+            <span>{citation.sourceId}</span>
+          )}
+          {typeof citation.quote === "string" && <blockquote>{citation.quote}</blockquote>}
         </article>
       ))}
     </div>
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function EvidenceItem({ match }: { match: EvidenceMatch }) {
@@ -438,8 +560,13 @@ function EvidenceItem({ match }: { match: EvidenceMatch }) {
         <span>Revision {match.revision_id.slice(0, 10)}</span>
       </div>
       <p>{match.content}</p>
-      <a href={match.canonical_url ?? `#${encodeURIComponent(match.source_id)}`} target={match.canonical_url ? "_blank" : undefined} rel="noreferrer">
-        {sourceName}{match.canonical_url && <span aria-hidden="true"> ↗</span>}
+      <a
+        href={match.canonical_url ?? `#${encodeURIComponent(match.source_id)}`}
+        target={match.canonical_url ? "_blank" : undefined}
+        rel="noreferrer"
+      >
+        {sourceName}
+        {match.canonical_url && <span aria-hidden="true"> ↗</span>}
       </a>
     </article>
   );

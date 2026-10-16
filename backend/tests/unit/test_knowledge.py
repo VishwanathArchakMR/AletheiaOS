@@ -7,12 +7,14 @@ from app.main import app
 class FakeKnowledgeRepository:
     def __init__(self) -> None:
         self.ingested: dict[str, object] | None = None
+        self.ingestion_count = 0
 
     def initialize(self) -> None:
         return None
 
     def ingest_source(self, **kwargs: object) -> IngestionReceipt:
         self.ingested = kwargs
+        self.ingestion_count += 1
         return IngestionReceipt("docs:handbook", "rev-123", 2, "active")
 
     def delete_source(self, source_id: str) -> bool:
@@ -144,3 +146,15 @@ def test_source_retirement_endpoint_returns_no_content() -> None:
         response = client.delete("/api/v1/sources/docs%3Ahandbook")
 
     assert response.status_code == 204
+
+
+def test_demo_load_endpoint_uses_curated_backend_fixtures() -> None:
+    repository = FakeKnowledgeRepository()
+    with TestClient(app) as client:
+        app.state.graph_repository = repository
+        response = client.post("/api/v1/demo/load", json={})
+
+    assert response.status_code == 200
+    assert response.json()["sources_loaded"] == 7
+    assert len(response.json()["sources"]) == 7
+    assert repository.ingestion_count == 7

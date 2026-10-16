@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
 
 settings = get_settings()
 app = FastAPI(title="AletheiaOS API", version="0.1.0", lifespan=lifespan)
+app.state.settings = settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,

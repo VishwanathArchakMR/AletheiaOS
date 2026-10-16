@@ -1,12 +1,16 @@
-.PHONY: up down test lint
+.PHONY: up down test lint seed-demo reset-demo
 up:
 	docker compose up --build
 down:
 	docker compose down
 test:
-	cd backend && uv run pytest
-	cd frontend && npm test
+	uv run --directory backend pytest
+	npm test --prefix frontend
 lint:
-	cd backend && uv run ruff check . && uv run ruff format --check .
-	cd frontend && npm run lint && npm run format:check
-
+	uv run --directory backend ruff check app tests
+	npm run --prefix frontend lint
+	npm run --prefix frontend format:check
+seed-demo:
+	docker compose exec backend uv run python -m app.seed_demo
+reset-demo:
+	docker compose exec backend uv run python -m app.seed_demo --reset-demo-sources

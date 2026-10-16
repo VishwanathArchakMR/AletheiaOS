@@ -19,9 +19,10 @@ services:
       FALKORDB_PORT: 6379
       FALKORDB_GRAPH_NAME: ${FALKORDB_GRAPH_NAME:-aletheia_os}
       FALKORDB_PASSWORD: ${FALKORDB_PASSWORD:-}
+      DEMO_DATA_DIRECTORY: /data/demo
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports: ["127.0.0.1:8000:8000"]
-    volumes: ["./backend:/app"]
+    volumes: ["./backend:/app", "./data/demo:/data/demo:ro"]
     depends_on:
       falkordb:
         condition: service_healthy
@@ -42,4 +43,3 @@ networks:
     driver: bridge
 volumes:
   falkordb_data:
-

@@ -1,0 +1,207 @@
+{
+  "questions": [
+    {
+      "question": "Who owns Project Launch?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-owner"],
+      "expected_source_ids": ["docs:company-handbook", "docs:service-architecture", "tickets:launch-owner-confirmation"],
+      "minimum_citation_sources": 2
+    },
+    {
+      "question": "Who is responsible for Project Launch?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-owner"]
+    },
+    {
+      "question": "Which team is responsible for Project Launch?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-owner"]
+    },
+    {
+      "question": "Who owns project:launch?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-owner"]
+    },
+    {
+      "question": "Who knows FalkorDB?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:maya-falkordb-skill", "fact:maya-completed-index-review", "fact:index-review-demonstrates-falkordb"],
+      "expected_source_ids": ["docs:company-handbook", "pr:graph-index-review"],
+      "minimum_citation_sources": 2
+    },
+    {
+      "question": "Who has experience with FalkorDB?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:maya-falkordb-skill"]
+    },
+    {
+      "question": "What work demonstrates Maya Chen's experience with FalkorDB?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:maya-completed-index-review", "fact:index-review-demonstrates-falkordb"],
+      "expected_source_ids": ["docs:company-handbook", "pr:graph-index-review"],
+      "minimum_citation_sources": 2
+    },
+    {
+      "question": "Why was the decision Graph architecture made?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:graph-architecture-rationale"],
+      "expected_source_ids": ["docs:company-handbook"]
+    },
+    {
+      "question": "Why did the company choose Graph architecture?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:graph-architecture-rationale"]
+    },
+    {
+      "question": "Decision lineage for Canary Rollout Decision",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:canary-supersedes-blue-green"],
+      "expected_source_ids": ["chat:architecture-review", "decisions:rollout-policy"],
+      "minimum_citation_sources": 2
+    },
+    {
+      "question": "Which decision superseded Blue-Green Rollout Decision?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:canary-supersedes-blue-green"],
+      "expected_source_ids": ["chat:architecture-review", "decisions:rollout-policy"],
+      "minimum_citation_sources": 2
+    },
+    {
+      "question": "Impact of Authentication Service",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-depends-auth", "fact:billing-depends-launch"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 2
+    },
+    {
+      "question": "What depends on Authentication Service?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-depends-auth", "fact:billing-depends-launch"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 2
+    },
+    {
+      "question": "What is affected by Authentication Service?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-depends-auth", "fact:billing-depends-launch"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 2
+    },
+    {
+      "question": "How is Platform connected to Project Launch?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-owner"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 1
+    },
+    {
+      "question": "How is Maya Chen connected to Project Launch?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:maya-platform-member", "fact:launch-owner"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 2
+    },
+    {
+      "question": "How is Billing connected to Authentication Service?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:billing-depends-launch", "fact:launch-depends-auth"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 2
+    },
+    {
+      "question": "Show impact from Authentication Service",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-depends-auth", "fact:billing-depends-launch"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 2
+    },
+    {
+      "question": "How is Project Launch connected to Authentication Service?",
+      "scenario": "baseline",
+      "expected_status": "supported",
+      "expected_fact_ids": ["fact:launch-depends-auth"],
+      "requires_graph_path": true,
+      "minimum_path_depth": 1
+    },
+    {
+      "question": "Who owns Billing?",
+      "scenario": "baseline",
+      "expected_status": "conflicting",
+      "expected_fact_ids": ["fact:billing-owner-finance", "fact:billing-owner-alex"]
+    },
+    {
+      "question": "Who owns Orion?",
+      "scenario": "baseline",
+      "expected_status": "ambiguous"
+    },
+    {
+      "question": "How is Orion connected to Project Launch?",
+      "scenario": "baseline",
+      "expected_status": "ambiguous"
+    },
+    {
+      "question": "Which claims have only stale evidence?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "What is the CFO's dog's name?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "Who knows Moonbase?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "Why did the company choose Unsupported Change?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "How is Project Launch connected to Moonbase?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "Who owns Graph architecture?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "Decision lineage for Unsupported Change",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "Can records support the claim that a moon base exists?",
+      "scenario": "baseline",
+      "expected_status": "insufficient_evidence"
+    },
+    {
+      "question": "Who owns Project Launch?",
+      "scenario": "after_owner_support_retraction",
+      "expected_status": "stale",
+      "expected_fact_ids": ["fact:launch-owner"]
+    }
+  ]
+}

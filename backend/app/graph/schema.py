@@ -4,12 +4,14 @@ from typing import Any
 from app.graph.client import GraphClient
 
 NODE_LABELS = (
+    "Entity",
     "Person",
     "Team",
     "Project",
     "Task",
     "Decision",
     "Skill",
+    "Rationale",
     "SourceRecord",
     "Chunk",
     "Fact",
@@ -36,7 +38,18 @@ RELATIONSHIP_TYPES = (
 )
 
 INDEXES = tuple((label, "id") for label in NODE_LABELS) + (
-    *((label, "name") for label in ("Person", "Team", "Project", "Task", "Decision", "Skill")),
+    *(
+        (label, "name")
+        for label in (
+            "Person",
+            "Team",
+            "Project",
+            "Task",
+            "Decision",
+            "Skill",
+            "Rationale",
+        )
+    ),
     ("SourceRecord", "active_revision_id"),
     ("SourceRecord", "kind"),
     ("Chunk", "source_id"),
@@ -50,6 +63,8 @@ class GraphSchema:
     def __init__(self, client: GraphClient, timeout_seconds: float = 10.0) -> None:
         self._client = client
         self._timeout_seconds = timeout_seconds
+        self._entities_migrated = False
+        self._fact_policies_migrated = False
 
     def initialize(self) -> None:
         index_result = self._client.query("CALL db.indexes()")
@@ -67,6 +82,33 @@ class GraphSchema:
                 self._client.create_unique_constraint(label, "id")
 
         self._wait_for_constraints()
+        self._migrate_typed_entities()
+        self._migrate_fact_policies()
+
+    def _migrate_typed_entities(self) -> None:
+        if self._entities_migrated:
+            return
+        for label in ("Person", "Team", "Project", "Task", "Decision", "Skill", "Rationale"):
+            self._client.query(
+                f"MATCH (entity:{label}) "
+                "WHERE entity.entity_type IS NULL "
+                f"SET entity:Entity, entity.entity_type = '{label}'"
+            )
+        self._entities_migrated = True
+
+    def _migrate_fact_policies(self) -> None:
+        if self._fact_policies_migrated:
+            return
+        self._client.query(
+            """
+            MATCH (fact:Fact)
+            WHERE fact.ownership_policy IS NULL
+            SET fact.ownership_policy = CASE WHEN fact.predicate = 'OWNS'
+                                             THEN 'exclusive'
+                                             ELSE 'not_applicable' END
+            """
+        )
+        self._fact_policies_migrated = True
 
     def _wait_for_constraints(self) -> None:
         deadline = monotonic() + self._timeout_seconds

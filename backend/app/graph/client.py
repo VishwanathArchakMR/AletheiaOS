@@ -51,4 +51,6 @@ class GraphClient:
         self.query("RETURN 1")
 
     def close(self) -> None:
+        if self._client is not None:
+            self._client.connection.close()
         self._client = None

@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 from redis.exceptions import RedisError
 
+from app.demo_data import load_demo_data
 from app.graph.ingestion import IngestionFormatError
 from app.graph.repository import RevisionConflictError
 
@@ -38,6 +39,7 @@ class GraphToolRequest(BaseModel):
     from_id: str | None = Field(default=None, min_length=1, max_length=512)
     to_id: str | None = Field(default=None, min_length=1, max_length=512)
     as_of: str | None = Field(default=None, min_length=10, max_length=40)
+    direction: Literal["older", "newer"] | None = None
     limit: int = Field(default=10, ge=1, le=20)
 
 
@@ -85,7 +87,10 @@ def ingest_source(payload: IngestSourceRequest, request: Request) -> dict[str, o
 @router.delete("/sources/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_source(source_id: str, request: Request) -> None:
     if not source_id.strip() or len(source_id) > 512:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid source ID")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid source ID",
+        )
     try:
         deleted = request.app.state.graph_repository.delete_source(source_id)
     except (RedisError, TimeoutError, OSError) as error:
@@ -133,12 +138,10 @@ def run_graph_tool(
 
 
 @router.post("/answers", response_model=None)
-def answer_question(
-    payload: QuestionRequest, request: Request
-) -> dict[str, object] | JSONResponse:
+def answer_question(payload: QuestionRequest, request: Request) -> dict[str, object] | JSONResponse:
     try:
         return request.app.state.graph_repository.answer_question(payload.question)
-    except (RedisError, TimeoutError, OSError) as error:
+    except (RedisError, TimeoutError, OSError):
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
@@ -147,3 +150,39 @@ def answer_question(
                 "claims": [],
             },
         )
+
+
+@router.post("/demo/load")
+def load_demo(request: Request) -> dict[str, object]:
+    repository = request.app.state.graph_repository
+    settings = request.app.state.settings
+    try:
+        repository.initialize()
+        receipts = load_demo_data(repository, settings.demo_data_directory)
+    except (IngestionFormatError, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
+    except FileNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        ) from error
+    except (RedisError, TimeoutError, OSError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="FalkorDB is unavailable",
+        ) from error
+    return {
+        "sources_loaded": len(receipts),
+        "sources": [
+            {
+                "source_id": receipt.source_id,
+                "revision_id": receipt.revision_id,
+                "chunks_processed": receipt.chunks_processed,
+                "status": receipt.status,
+            }
+            for receipt in receipts
+        ],
+    }

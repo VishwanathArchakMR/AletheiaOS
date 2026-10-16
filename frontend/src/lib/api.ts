@@ -61,10 +61,10 @@ export interface GraphToolResponse {
   results: Array<Record<string, unknown>>;
 }
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 async function getHealth(path: string): Promise<HealthResponse> {
-  const response = await fetch(`${baseUrl}/api/v1/health/${path}`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/health/${path}`, {
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok && response.status !== 503) throw new Error("Unusable API status");
@@ -74,7 +74,7 @@ async function getHealth(path: string): Promise<HealthResponse> {
 export const api = { live: () => getHealth("live"), ready: () => getHealth("ready") };
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${baseUrl}/api/v1/${path}`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -95,12 +95,12 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const knowledgeApi = {
-  ingestSource: (source: SourceInput) =>
-    postJson<IngestionReceipt>("sources", source),
+  loadDemo: () =>
+    postJson<{ sources_loaded: number; sources: IngestionReceipt[] }>("demo/load", {}),
+  ingestSource: (source: SourceInput) => postJson<IngestionReceipt>("sources", source),
   searchEvidence: (query: string) =>
     postJson<{ matches: EvidenceMatch[] }>("evidence/search", { query, limit: 10 }),
-  answerQuestion: (question: string) =>
-    postJson<AnswerResponse>("answers", { question }),
+  answerQuestion: (question: string) => postJson<AnswerResponse>("answers", { question }),
   runTool: (tool: GraphToolName, parameters: Record<string, string | number>) =>
     postJson<GraphToolResponse>(`tools/${tool}`, parameters),
 };

@@ -1,0 +1,20 @@
+{
+  "source_id": "tickets:launch-owner-confirmation",
+  "kind": "ticket",
+  "canonical_url": "https://example.test/tickets/LAUNCH-18",
+  "entities": [
+    {"id": "team:platform", "type": "Team", "name": "Platform"},
+    {"id": "project:launch", "type": "Project", "name": "Project Launch"}
+  ],
+  "facts": [
+    {
+      "id": "fact:launch-owner",
+      "predicate": "OWNS",
+      "subject_id": "team:platform",
+      "object_id": "project:launch",
+      "ownership_policy": "exclusive",
+      "quote": "The launch ticket confirms the Platform team's ownership of Project Launch."
+    }
+  ],
+  "evidence": "The launch ticket confirms the Platform team's ownership of Project Launch."
+}

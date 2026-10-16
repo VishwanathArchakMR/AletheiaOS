@@ -79,6 +79,32 @@ def test_structured_facts_reject_unresolved_entities_and_quotes() -> None:
         extract_structured_graph(content, parsed.sections)
 
 
+def test_structured_facts_reject_invalid_relationship_types_and_dates() -> None:
+    wrong_relation = (
+        '{"entities":['
+        '{"id":"person:alice","type":"Person","name":"Alice"},'
+        '{"id":"team:platform","type":"Team","name":"Platform"}],'
+        '"facts":[{"predicate":"DEPENDS_ON","subject_id":"person:alice",'
+        '"object_id":"team:platform","quote":"Alice depends on Platform."}],'
+        '"evidence":"Alice depends on Platform."}'
+    )
+    parsed = parse_source("doc:bad-relation", wrong_relation, "json")
+    with pytest.raises(IngestionFormatError, match="does not support"):
+        extract_structured_graph(wrong_relation, parsed.sections)
+
+    invalid_dates = (
+        '{"entities":['
+        '{"id":"team:platform","type":"Team","name":"Platform"},'
+        '{"id":"project:launch","type":"Project","name":"Launch"}],'
+        '"facts":[{"predicate":"OWNS","subject_id":"team:platform",'
+        '"object_id":"project:launch","valid_from":"2025-2-1",'
+        '"quote":"Platform owns Launch."}],"evidence":"Platform owns Launch."}'
+    )
+    parsed = parse_source("doc:bad-date", invalid_dates, "json")
+    with pytest.raises(IngestionFormatError, match="YYYY-MM-DD"):
+        extract_structured_graph(invalid_dates, parsed.sections)
+
+
 class FakeQueryResult:
     def __init__(self, value: object | None) -> None:
         self.result_set = [] if value is None else [[value]]
@@ -105,7 +131,11 @@ class FakeIngestionClient:
         if "RETURN source.active_revision_id" in cypher:
             return FakeQueryResult(self.active_revision)
         if "RETURN count(chunk)" in cypher:
-            value = self.expected_count if "HAS_CHUNK" in cypher else None
+            value = (
+                self.expected_count
+                if "MATCH (source:SourceRecord" in cypher
+                else len(parameters["chunks"])
+            )
             return FakeQueryResult(value)
         return FakeQueryResult(None)
 
@@ -123,13 +153,15 @@ def test_ingestion_activates_only_after_revision_verification() -> None:
     assert client.active_revision == parsed.revision_id
     queries = [query for query, _ in client.calls]
     verification_index = next(
-        index for index, query in enumerate(queries) if "RETURN count(chunk)" in query
+        index
+        for index, query in enumerate(queries)
+        if "RETURN count(chunk)" in query and "MATCH (source:SourceRecord" in query
     )
     switch_index = next(
         index for index, query in enumerate(queries) if "SET source.active_revision_id" in query
     )
     revalidation_index = next(
-        index for index, query in enumerate(queries) if "SET fact.status = 'stale'" in query
+        index for index, query in enumerate(queries) if "SET fact.status = CASE" in query
     )
     assert "HAS_CHUNK" in queries[verification_index]
     assert verification_index < switch_index < revalidation_index

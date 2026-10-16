@@ -1,0 +1,31 @@
+{
+  "source_id": "tickets:billing-ownership",
+  "kind": "ticket",
+  "canonical_url": "https://example.test/tickets/BILL-42",
+  "entities": [
+    {"id": "team:finance", "type": "Team", "name": "Finance"},
+    {"id": "person:alex-rivera", "type": "Person", "name": "Alex Rivera"},
+    {"id": "project:billing", "type": "Project", "name": "Billing"},
+    {"id": "team:orion", "type": "Team", "name": "Orion"},
+    {"id": "project:orion", "type": "Project", "name": "Orion"}
+  ],
+  "facts": [
+    {
+      "id": "fact:billing-owner-finance",
+      "predicate": "OWNS",
+      "subject_id": "team:finance",
+      "object_id": "project:billing",
+      "ownership_policy": "exclusive",
+      "quote": "Finance owns Billing and approves its operating budget."
+    },
+    {
+      "id": "fact:billing-owner-alex",
+      "predicate": "OWNS",
+      "subject_id": "person:alex-rivera",
+      "object_id": "project:billing",
+      "ownership_policy": "exclusive",
+      "quote": "Alex Rivera is the owner of Billing delivery."
+    }
+  ],
+  "evidence": "Finance owns Billing and approves its operating budget. Alex Rivera is the owner of Billing delivery. The ownership records have not yet been reconciled."
+}

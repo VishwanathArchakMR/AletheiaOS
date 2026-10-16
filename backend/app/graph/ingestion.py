@@ -4,11 +4,12 @@ import io
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime
 
 MAX_CHUNK_CHARACTERS = 4000
 _HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
 _STABLE_CSV_KEYS = ("id", "source_id", "issue_id", "task_id", "key")
-ENTITY_LABELS = frozenset({"Person", "Team", "Project", "Task", "Decision", "Skill"})
+ENTITY_LABELS = frozenset({"Person", "Team", "Project", "Task", "Decision", "Skill", "Rationale"})
 PROJECTED_PREDICATES = {
     "OWNS": "OWNS",
     "MEMBER_OF": "MEMBER_OF",
@@ -26,6 +27,23 @@ PROJECTED_PREDICATES = {
     "SUPERSEDES": "SUPERSEDES",
 }
 STRUCTURED_PREDICATES = frozenset(PROJECTED_PREDICATES) | {"DECISION_RATIONALE"}
+PREDICATE_ENDPOINTS = {
+    "OWNS": ({"Person", "Team"}, {"Project", "Task", "Decision"}),
+    "MEMBER_OF": ({"Person"}, {"Team"}),
+    "HAS_SKILL": ({"Person"}, {"Skill"}),
+    "ASSIGNED_TO": ({"Person"}, {"Task"}),
+    "PARTICIPATED_IN": ({"Person"}, {"Project", "Task", "Decision"}),
+    "COMPLETED": ({"Person"}, {"Task"}),
+    "AUTHORED": ({"Person"}, {"Project", "Task", "Decision"}),
+    "REVIEWED": ({"Person"}, {"Project", "Task", "Decision"}),
+    "CONTAINS": ({"Team", "Project"}, {"Project", "Task"}),
+    "DEPENDS_ON": ({"Project", "Task"}, {"Project", "Task"}),
+    "REFERENCES": (ENTITY_LABELS, {"Project", "Task", "Decision", "Skill"}),
+    "MENTIONS": (ENTITY_LABELS, ENTITY_LABELS),
+    "FIXES": ({"Task"}, {"Project", "Task"}),
+    "SUPERSEDES": ({"Decision"}, {"Decision"}),
+    "DECISION_RATIONALE": ({"Decision"}, {"Rationale"}),
+}
 
 
 class IngestionFormatError(ValueError):
@@ -66,6 +84,7 @@ class FactRecord:
     valid_from: str | None
     valid_to: str | None
     status: str
+    ownership_policy: str
 
 
 @dataclass(frozen=True)
@@ -140,19 +159,52 @@ def extract_structured_graph(content: str, sections: tuple[SourceSection, ...]) 
         object_id = _required_string(raw, "object_id", "fact")
         if subject_id not in entities_by_id or object_id not in entities_by_id:
             raise IngestionFormatError("Fact references must resolve to supplied stable entity IDs")
+        subject_label = entities_by_id[subject_id].label
+        object_label = entities_by_id[object_id].label
+        allowed_subjects, allowed_objects = PREDICATE_ENDPOINTS[predicate]
+        if subject_label not in allowed_subjects or object_label not in allowed_objects:
+            raise IngestionFormatError(
+                f"{predicate} does not support {subject_label} -> {object_label}"
+            )
         quote = _required_string(raw, "quote", "fact")
         if not any(quote in text for text in section_text):
             raise IngestionFormatError("Fact quote is not present in any ingested evidence chunk")
 
         valid_from = _optional_string(raw.get("valid_from"), "valid_from")
         valid_to = _optional_string(raw.get("valid_to"), "valid_to")
+        _validate_date(valid_from, "valid_from")
+        _validate_date(valid_to, "valid_to")
+        if valid_from and valid_to and valid_from >= valid_to:
+            raise IngestionFormatError("valid_to must be later than valid_from")
         status = str(raw.get("status", "accepted")).lower()
         if status not in {"accepted", "candidate"}:
             raise IngestionFormatError("Fact status must be accepted or candidate")
+        ownership_policy = raw.get("ownership_policy")
+        if predicate == "OWNS":
+            if ownership_policy is None:
+                ownership_policy = "exclusive"
+            if not isinstance(ownership_policy, str) or ownership_policy not in {
+                "exclusive",
+                "shared",
+            }:
+                raise IngestionFormatError("ownership_policy for OWNS must be exclusive or shared")
+        else:
+            if ownership_policy not in (None, "not_applicable"):
+                raise IngestionFormatError("ownership_policy applies only to OWNS facts")
+            ownership_policy = "not_applicable"
         fact_id = raw.get("id")
         if fact_id is None:
             fact_id = "fact:" + _digest(
-                "\0".join((predicate, subject_id, object_id, valid_from or "", valid_to or ""))
+                "\0".join(
+                    (
+                        predicate,
+                        subject_id,
+                        object_id,
+                        valid_from or "",
+                        valid_to or "",
+                        ownership_policy,
+                    )
+                )
             )
         if not isinstance(fact_id, str) or not fact_id.strip():
             raise IngestionFormatError("Fact id must be a non-empty string")
@@ -165,15 +217,27 @@ def extract_structured_graph(content: str, sections: tuple[SourceSection, ...]) 
                 predicate,
                 subject_id,
                 object_id,
-                entities_by_id[subject_id].label,
-                entities_by_id[object_id].label,
+                subject_label,
+                object_label,
                 quote,
                 valid_from,
                 valid_to,
                 status,
+                ownership_policy,
             )
         )
     return StructuredGraph(tuple(entities), tuple(facts))
+
+
+def _validate_date(value: str | None, field_name: str) -> None:
+    if value is None:
+        return
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d")
+    except ValueError as error:
+        raise IngestionFormatError(f"{field_name} must use YYYY-MM-DD format") from error
+    if parsed.strftime("%Y-%m-%d") != value:
+        raise IngestionFormatError(f"{field_name} must use YYYY-MM-DD format")
 
 
 def _required_string(value: dict[str, object], key: str, record_type: str) -> str:

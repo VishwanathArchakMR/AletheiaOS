@@ -1,0 +1,36 @@
+{
+  "source_id": "docs:service-architecture",
+  "kind": "document",
+  "canonical_url": "https://example.test/architecture/services",
+  "entities": [
+    {"id": "team:platform", "type": "Team", "name": "Platform"},
+    {"id": "project:launch", "type": "Project", "name": "Project Launch"},
+    {"id": "project:auth-service", "type": "Project", "name": "Authentication Service"},
+    {"id": "project:billing", "type": "Project", "name": "Billing"}
+  ],
+  "facts": [
+    {
+      "id": "fact:launch-owner",
+      "predicate": "OWNS",
+      "subject_id": "team:platform",
+      "object_id": "project:launch",
+      "ownership_policy": "exclusive",
+      "quote": "The Platform team remains accountable for Project Launch."
+    },
+    {
+      "id": "fact:launch-depends-auth",
+      "predicate": "DEPENDS_ON",
+      "subject_id": "project:launch",
+      "object_id": "project:auth-service",
+      "quote": "Project Launch depends on the Authentication Service."
+    },
+    {
+      "id": "fact:billing-depends-launch",
+      "predicate": "DEPENDS_ON",
+      "subject_id": "project:billing",
+      "object_id": "project:launch",
+      "quote": "Billing depends on Project Launch for account provisioning."
+    }
+  ],
+  "evidence": "The Platform team remains accountable for Project Launch. Project Launch depends on the Authentication Service. Billing depends on Project Launch for account provisioning."
+}

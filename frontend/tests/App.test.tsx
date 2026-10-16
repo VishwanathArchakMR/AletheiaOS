@@ -56,15 +56,17 @@ test("searches active evidence through the backend", async () => {
       ok: true,
       status: 200,
       json: async () => ({
-        matches: [{
-          source_id: "docs:handbook",
-          kind: "document",
-          canonical_url: "https://example.com/handbook",
-          chunk_id: "chunk-1",
-          revision_id: "revision-1234567890",
-          citation_locator: "ownership, lines 4-6",
-          content: "The release owner is Jordan.",
-        }],
+        matches: [
+          {
+            source_id: "docs:handbook",
+            kind: "document",
+            canonical_url: "https://example.com/handbook",
+            chunk_id: "chunk-1",
+            revision_id: "revision-1234567890",
+            citation_locator: "ownership, lines 4-6",
+            content: "The release owner is Jordan.",
+          },
+        ],
       }),
     };
   });
@@ -137,14 +139,16 @@ test("shows a supported answer with its source citation", async () => {
       json: async () => ({
         status: "supported",
         answer: "Jordan is supported as the current owner.",
-        claims: [{
-          fact_id: "fact:owner",
-          source_id: "docs:handbook",
-          canonical_url: "https://example.com/handbook",
-          chunk_id: "chunk-1",
-          revision_id: "revision-1234567890",
-          citation_locator: "ownership, lines 4-6",
-        }],
+        claims: [
+          {
+            fact_id: "fact:owner",
+            source_id: "docs:handbook",
+            canonical_url: "https://example.com/handbook",
+            chunk_id: "chunk-1",
+            revision_id: "revision-1234567890",
+            citation_locator: "ownership, lines 4-6",
+          },
+        ],
       }),
     };
   });
@@ -164,6 +168,33 @@ test("shows a supported answer with its source citation", async () => {
   );
 });
 
+test("loads the curated synthetic company dataset through the backend", async () => {
+  mockFetch.mockImplementation(async (input: unknown) => {
+    const url = String(input);
+    if (url.endsWith("/live")) {
+      return { ok: true, status: 200, json: async () => ({ status: "ok", service: "api" }) };
+    }
+    if (url.endsWith("/ready")) {
+      return { ok: true, status: 200, json: async () => ({ status: "ok", service: "falkordb" }) };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ sources_loaded: 7, sources: [] }),
+    };
+  });
+
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "Ask AletheiaOS" }));
+  fireEvent.click(screen.getByRole("button", { name: "Load synthetic company demo" }));
+
+  expect(await screen.findByText(/Loaded 7 demo sources/)).toBeInTheDocument();
+  expect(mockFetch).toHaveBeenCalledWith(
+    expect.stringContaining("/api/v1/demo/load"),
+    expect.objectContaining({ method: "POST" }),
+  );
+});
+
 test("runs a reviewed graph tool and renders its citation", async () => {
   mockFetch.mockImplementation(async (input: unknown) => {
     const url = String(input);
@@ -178,13 +209,15 @@ test("runs a reviewed graph tool and renders its citation", async () => {
       status: 200,
       json: async () => ({
         tool: "who_owns",
-        results: [{
-          fact_id: "fact:owner",
-          source_id: "docs:handbook",
-          chunk_id: "chunk-1",
-          revision_id: "revision-1234567890",
-          citation_locator: "ownership, lines 4-6",
-        }],
+        results: [
+          {
+            fact_id: "fact:owner",
+            source_id: "docs:handbook",
+            chunk_id: "chunk-1",
+            revision_id: "revision-1234567890",
+            citation_locator: "ownership, lines 4-6",
+          },
+        ],
       }),
     };
   });
@@ -211,7 +244,11 @@ test("renders the explicit graph-unavailable answer state", async () => {
       return { ok: true, status: 200, json: async () => ({ status: "ok", service: "api" }) };
     }
     if (url.endsWith("/ready")) {
-      return { ok: true, status: 200, json: async () => ({ status: "unavailable", service: "falkordb" }) };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ status: "unavailable", service: "falkordb" }),
+      };
     }
     return {
       ok: false,

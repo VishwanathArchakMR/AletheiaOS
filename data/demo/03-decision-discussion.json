@@ -1,0 +1,19 @@
+{
+  "source_id": "chat:architecture-review",
+  "kind": "chat",
+  "canonical_url": "https://example.test/discussions/architecture-review",
+  "entities": [
+    {"id": "decision:rollout-blue-green", "type": "Decision", "name": "Blue-Green Rollout Decision"},
+    {"id": "decision:rollout-canary", "type": "Decision", "name": "Canary Rollout Decision"}
+  ],
+  "facts": [
+    {
+      "id": "fact:canary-supersedes-blue-green",
+      "predicate": "SUPERSEDES",
+      "subject_id": "decision:rollout-canary",
+      "object_id": "decision:rollout-blue-green",
+      "quote": "The canary rollout decision supersedes the earlier blue-green rollout decision."
+    }
+  ],
+  "evidence": "The canary rollout decision supersedes the earlier blue-green rollout decision after the staged traffic review."
+}

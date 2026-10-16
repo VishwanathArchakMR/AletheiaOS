@@ -1,0 +1,53 @@
+{
+  "source_id": "docs:company-handbook",
+  "kind": "document",
+  "canonical_url": "https://example.test/handbook",
+  "entities": [
+    {"id": "person:maya-chen", "type": "Person", "name": "Maya Chen"},
+    {"id": "team:platform", "type": "Team", "name": "Platform"},
+    {"id": "project:launch", "type": "Project", "name": "Project Launch"},
+    {"id": "skill:falkordb", "type": "Skill", "name": "FalkorDB"},
+    {"id": "task:graph-index-review", "type": "Task", "name": "Graph index review"},
+    {"id": "decision:architecture-v1", "type": "Decision", "name": "Graph architecture"},
+    {"id": "rationale:graph-traversal", "type": "Rationale", "name": "Graph traversal rationale"}
+  ],
+  "facts": [
+    {
+      "id": "fact:maya-platform-member",
+      "predicate": "MEMBER_OF",
+      "subject_id": "person:maya-chen",
+      "object_id": "team:platform",
+      "quote": "Maya Chen is a member of the Platform team."
+    },
+    {
+      "id": "fact:launch-owner",
+      "predicate": "OWNS",
+      "subject_id": "team:platform",
+      "object_id": "project:launch",
+      "ownership_policy": "exclusive",
+      "quote": "The Platform team owns Project Launch."
+    },
+    {
+      "id": "fact:maya-falkordb-skill",
+      "predicate": "HAS_SKILL",
+      "subject_id": "person:maya-chen",
+      "object_id": "skill:falkordb",
+      "quote": "Maya Chen has explicit expertise in FalkorDB."
+    },
+    {
+      "id": "fact:maya-completed-index-review",
+      "predicate": "COMPLETED",
+      "subject_id": "person:maya-chen",
+      "object_id": "task:graph-index-review",
+      "quote": "Maya Chen completed the graph index review."
+    },
+    {
+      "id": "fact:graph-architecture-rationale",
+      "predicate": "DECISION_RATIONALE",
+      "subject_id": "decision:architecture-v1",
+      "object_id": "rationale:graph-traversal",
+      "quote": "We chose FalkorDB because it supports low-latency graph traversal without a separate vector store."
+    }
+  ],
+  "evidence": "Maya Chen is a member of the Platform team. The Platform team owns Project Launch. Maya Chen has explicit expertise in FalkorDB. Maya Chen completed the graph index review. We chose FalkorDB because it supports low-latency graph traversal without a separate vector store."
+}
