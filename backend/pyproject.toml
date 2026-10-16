@@ -1,0 +1,22 @@
+[project]
+name = "aletheiaos-backend"
+version = "0.1.0"
+description = "AletheiaOS API foundation"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "falkordb==1.0.10",
+  "fastapi==0.115.12",
+  "pydantic-settings==2.9.1",
+  "uvicorn[standard]==0.34.3",
+]
+[dependency-groups]
+dev = ["httpx==0.28.1", "pytest==8.3.5", "ruff==0.11.12"]
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
